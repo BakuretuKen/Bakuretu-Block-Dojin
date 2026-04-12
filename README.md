@@ -18,6 +18,11 @@
 6ゲーム目はシークレットとなっていて、それ以外のゲーム全てクリアしていないと遊べないようになっています。<br />
 シークレットゲームだけ、ボールの速度が少し早くなっています。
 
+## ゲーム制作紹介ブログページ
+
+**同人ソフトを作っちゃお！ - 爆裂健ホームページ**<br />
+**[https://bakuretuken.com/dojingame](https://bakuretuken.com/dojingame)**
+
 ## 実際の同人ゲーム
 
 **[帰ってきた爆裂ブロック崩し](https://www.dlsite.com/aix/work/=/product_id/RJ01600980.html)**<br />
@@ -26,7 +31,7 @@
 
 ## ゲーム起動方法
 
-go言語の開発環境が設定済みであることを前提としています。
+※ go言語の開発環境が設定済みであることを前提としています。
 
 **1. main.go の appDirNameValue、saveDataFile を設定する**
 
@@ -40,16 +45,24 @@ const (
 
 この設定は、ゲームデータを保存するフォルダ名とファイル名になります。<br />
 両設定とも、半角英数字記号で指定してください。<br />
-ゲームデータの保存場所が被らないように、名前を指定してください。
+他の本ゲーム開発者とゲームデータの保存場所が被らないように、名前を指定してください。
 
-【推奨設定】<br />
+**【推奨設定】**<br />
 appDirNameValue は、サークル名や自分のドメイン名を指定してください。<br />
 例）HogeHogeGames、hogehogefuga.com など
 
 saveDataFile は、ゲームデータを保存するファイル名を指定してください。<br />
 例）game_01.txt、block_game.txt など
 
-**2. go run コマンドでゲームを起動する**
+**2. go mod tidy コマンドでパッケージをインストールする**
+
+go.mod ファイルがあるディレクトリで実行してください。
+
+```bash
+go mod tidy
+```
+
+**3. go run コマンドでゲームを起動する**
 
 ```bash
 go run .
@@ -153,14 +166,15 @@ go build -o Game.exe -ldflags="-H=windowsgui" .
 
 ## セーブデータの保存場所
 
-Windowsの場合<br />
+■ Windowsの場合<br />
 C:\Users\ユーザー名\AppData\Local\【appDirNameValue】\【saveDataFile】
 
-Macの場合<br />
+■ Macの場合<br />
 /Users/ユーザー名/Library/Application Support/【appDirNameValue】/【saveDataFile】
 
 Windows 以外は動作未検証です。<br />
-セーブデータの読み書きプログラムは appdata.go に記載されています。
+セーブデータの読み書きプログラムは appdata.go に記載されています。<br />
+Windows/mac 以外でセーブデータを保存する場合は、プログラムの改修が必要です。
 
 ## デバッグ機能
 
@@ -185,4 +199,4 @@ https://bakuretuken.com/
 
 ## ライセンス
 
-MIT
+MIT License
