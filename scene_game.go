@@ -11,7 +11,6 @@ import (
 const (
 	blockSize            = 64   // ブロックサイズ（ピクセル）
 	blockThreshold       = 0.10 // 不透明率しきい値（n%）
-	ballSpeed            = 9    // デフォルトボール速度（ピクセル/フレーム）
 	ballSpeedAdditional  = 3    // デフォルトボール速度追加（ピクセル/フレーム）
 	panelWidth           = 240  // 反射板の幅（ピクセル）
 	panelY               = 42   // 反射板のY位置（下端からの距離）
@@ -63,20 +62,17 @@ type GameScene struct {
 
 // NewGameScene はゲーム画面を初期化して返す
 func NewGameScene(gameCode string) Scene {
+	cfg := GetStageConfig(gameCode)
 	scene := &GameScene{
 		ballX:               0,
 		ballY:               0,
-		ballVX:              ballSpeed,
-		ballVY:              ballSpeed,
+		ballVX:              cfg.BallSpeed,
+		ballVY:              cfg.BallSpeed,
 		gameState:           gameStateStart,
 		lives:               3,
 		gameCode:            gameCode,
-		ballSpeed:           ballSpeed,
+		ballSpeed:           cfg.BallSpeed,
 		ballSpeedAdditional: ballSpeedAdditional,
-	}
-	// ボーナスステージのみボール速度アップ
-	if gameCode == "06" {
-		scene.ballSpeed = ballSpeed + 3
 	}
 
 	// 背景画像を読み込む

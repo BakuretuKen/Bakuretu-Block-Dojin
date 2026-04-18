@@ -1,6 +1,8 @@
 .DS_Store
-
 .env
 .env.*
 !.env.example
-
+/CLAUDE.md
+/AGENT.md
+/blockgame
+/blockgame.exe
