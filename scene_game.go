@@ -447,7 +447,7 @@ func (s *GameScene) updateLoseOrWinTransition() Scene {
 	return nil // 現在のシーンを継続
 }
 
-// destroyBlock はブロックを破壊し、背景画像で前景を上書きする
+// destroyBlock はブロックを破壊し、前景画像の該当セルを透明にする
 func (s *GameScene) destroyBlock(col, row int) {
 	if row < 0 || row >= s.blockRows || col < 0 || col >= s.blockCols {
 		return
@@ -473,14 +473,11 @@ func (s *GameScene) destroyBlockImageParts(col, row int) {
 }
 
 func (s *GameScene) eraseBlockCell(col, row int) {
-	// 背景画像からブロック範囲を前景画像に描画
+	// 前景画像のブロック範囲を透明にする（背景は Draw でその下に重ねている）
 	x, y := col*blockSize, row*blockSize
 	blockRect := image.Rect(x, y, x+blockSize, y+blockSize)
-	bgBlock := s.bgImage.SubImage(blockRect).(*ebiten.Image)
-
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	s.fgImage.DrawImage(bgBlock, op)
+	cell := s.fgImage.SubImage(blockRect).(*ebiten.Image)
+	cell.Clear()
 }
 
 func (s *GameScene) playPanelHitSE() {
@@ -495,13 +492,13 @@ func (s *GameScene) playBlockBreakSE() {
 func (s *GameScene) Draw(screen *ebiten.Image) {
 	// 背景を描画
 	screen.DrawImage(s.bgImage, &ebiten.DrawImageOptions{})
-	// 前景を描画
-	screen.DrawImage(s.fgImage, &ebiten.DrawImageOptions{})
-
-	// アニメ描画（fg のすぐ上、再生フェーズのみ表示）
+	// アニメ描画（背景画像のすぐ上、再生フェーズのみ表示）
 	if s.animeSprite != nil && s.animePlaying {
 		s.animeSprite.Draw(screen)
 	}
+	// 前景を描画
+	screen.DrawImage(s.fgImage, &ebiten.DrawImageOptions{})
+
 
 	// 残機画像を右上に表示（lives - 1 個）
 	lifeSize := s.lifeImage.Bounds().Size()
