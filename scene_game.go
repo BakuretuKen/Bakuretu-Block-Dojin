@@ -11,7 +11,6 @@ import (
 const (
 	blockSize            = 64   // ブロックサイズ（ピクセル）
 	blockThreshold       = 0.10 // 不透明率しきい値（n%）
-	ballSpeed            = 9    // デフォルトボール速度（ピクセル/フレーム）
 	ballSpeedAdditional  = 3    // デフォルトボール速度追加（ピクセル/フレーム）
 	panelWidth           = 240  // 反射板の幅（ピクセル）
 	panelY               = 42   // 反射板のY位置（下端からの距離）
@@ -59,24 +58,29 @@ type GameScene struct {
 
 	ballSpeed           int // ボール速度（ピクセル/フレーム）
 	ballSpeedAdditional int // ボール速度追加（ピクセル/フレーム）
+
+	animeSprite   *Sprite // アニメーションスプライト（nil の場合はアニメ無し）
+	animeSheet    int     // アニメーション画面数
+	animeInterval int     // アニメーション実行間隔（フレーム）
+	animeSpeed    int     // アニメ画像切り替え間隔（フレーム）
+	animeCounter  int     // フェーズ内の経過フレーム
+	animePlaying  bool    // true: 再生中、false: 待機中
+	animeFrame    int     // 現在の再生フレーム index
 }
 
 // NewGameScene はゲーム画面を初期化して返す
 func NewGameScene(gameCode string) Scene {
+	cfg := GetStageConfig(gameCode)
 	scene := &GameScene{
 		ballX:               0,
 		ballY:               0,
-		ballVX:              ballSpeed,
-		ballVY:              ballSpeed,
+		ballVX:              cfg.BallSpeed,
+		ballVY:              cfg.BallSpeed,
 		gameState:           gameStateStart,
 		lives:               3,
 		gameCode:            gameCode,
-		ballSpeed:           ballSpeed,
+		ballSpeed:           cfg.BallSpeed,
 		ballSpeedAdditional: ballSpeedAdditional,
-	}
-	// ボーナスステージのみボール速度アップ
-	if gameCode == "06" {
-		scene.ballSpeed = ballSpeed + 3
 	}
 
 	// 背景画像を読み込む
@@ -166,6 +170,20 @@ func NewGameScene(gameCode string) Scene {
 		fmt.Println(err.Error())
 	}
 
+	// アニメ画像を読み込み（AnimeSheet > 0 の場合のみ）
+	if cfg.AnimeSheet > 0 {
+		animeImg, err := LoadEbitenImage("assets/" + gameCode + "/game_anime_image.jpg")
+		if err != nil {
+			return NewErrorScene("Failed to load anime image: " + err.Error())
+		}
+		scene.animeSprite = NewSprite(animeImg, cfg.AnimeSheet)
+		scene.animeSprite.x = cfg.AnimeX
+		scene.animeSprite.y = cfg.AnimeY
+		scene.animeSheet = cfg.AnimeSheet
+		scene.animeInterval = cfg.AnimeInterval
+		scene.animeSpeed = cfg.AnimeSpeed
+	}
+
 	return scene
 }
 
@@ -177,6 +195,7 @@ func (s *GameScene) Update() Scene {
 	// BGMのループ再生を管理（グローバルプレイヤーを使用）
 	EnsureBGMLooping()
 
+	s.updateAnime()
 	s.updatePanelPosition()
 	if s.updateStartState() {
 		return nil
@@ -184,6 +203,40 @@ func (s *GameScene) Update() Scene {
 
 	// ゲーム中の処理
 	return s.updatePlayingState()
+}
+
+// updateAnime はアニメーションの待機/再生フェーズを進める
+// AnimeInterval フレーム待機 → AnimeSheet 枚を AnimeSpeed フレーム毎に切り替え → 再び待機 …
+func (s *GameScene) updateAnime() {
+	if s.animeSprite == nil {
+		return
+	}
+	s.animeCounter++
+	if !s.animePlaying {
+		// 待機フェーズ
+		if s.animeCounter >= s.animeInterval {
+			s.animeCounter = 0
+			s.animePlaying = true
+			s.animeFrame = 0
+			s.animeSprite.SetFrame(0)
+		}
+		return
+	}
+	// 再生フェーズ
+	if s.animeSpeed <= 0 {
+		return
+	}
+	if s.animeCounter >= s.animeSpeed {
+		s.animeCounter = 0
+		s.animeFrame++
+		if s.animeFrame >= s.animeSheet {
+			// 全フレーム再生完了 → 待機フェーズへ
+			s.animePlaying = false
+			s.animeFrame = 0
+			return
+		}
+		s.animeSprite.SetFrame(s.animeFrame)
+	}
 }
 
 func (s *GameScene) updatePanelPosition() {
@@ -444,6 +497,11 @@ func (s *GameScene) Draw(screen *ebiten.Image) {
 	screen.DrawImage(s.bgImage, &ebiten.DrawImageOptions{})
 	// 前景を描画
 	screen.DrawImage(s.fgImage, &ebiten.DrawImageOptions{})
+
+	// アニメ描画（fg のすぐ上、再生フェーズのみ表示）
+	if s.animeSprite != nil && s.animePlaying {
+		s.animeSprite.Draw(screen)
+	}
 
 	// 残機画像を右上に表示（lives - 1 個）
 	lifeSize := s.lifeImage.Bounds().Size()
